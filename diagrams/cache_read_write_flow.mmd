@@ -1,5 +1,10 @@
 flowchart LR
-    Node -->|produce data| CacheManager
-    CacheManager -->|save| ParquetFiles
-    ParquetFiles -->|lazy/eager read| CacheManager
-    CacheManager --> Node
+    Node["Graph Node"]
+    CacheManager["CacheManager"]
+    Parquet["Parquet Files (Local FS)"]
+
+    Node -->|"produce tabular data"| CacheManager
+    CacheManager -->|"save (pandas → parquet)"| Parquet
+    Parquet -->|"eager read (pandas)"| CacheManager
+    Parquet -->|"lazy / partial read (polars)"| CacheManager
+    CacheManager -->|"return data"| Node
