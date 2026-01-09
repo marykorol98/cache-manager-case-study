@@ -2,18 +2,28 @@
 
 ## Executive Summary
 I replaced a legacy node-level cache with a new cache manager designed for **reliable local persistence** and **efficient access to large tabular data**.
-The migration moved storage from a custom HDF5-based approach to **Parquet**, and introduced an optional **lazy/partial read path via Polars** for preview-like scenarios.
-This cache is used to store intermediate datasets produced by nodes in a graph-based pipeline.
+
+The migration moves storage from a custom HDF5-based approach to **Parquet**, and introduces an optional **lazy/partial read path via Polars** for preview-like scenarios.
+
+This cache stores intermediate datasets produced by nodes in a graph-based pipeline and keeps remote references as references rather than persisting them.
+
+---
+
+## Repository Map
+- `code/new_cache_manager.py` — new `CacheManager` with Parquet persistence and optional Polars reads.
+- `code/old_cache_manager.py` — legacy cache using HDF5 + storage handlers.
+- `docs/before-after.md` — before/after comparison table.
+- `docs/design-tradeoffs.md` — short trade-off notes.
+- `diagrams/cache_read_write_flow.mmd` — Mermaid diagram source.
 
 ---
 
 ## What This Case Study Shows
-- Production-grade migration work (not a greenfield project)
-- Storage format redesign (HDF5 → Parquet)
-- Efficiency features for large data (column/row subset reads)
-- Backward compatibility and safe failure modes
-- Clear separation between “cached data” and “remote references”
-
+- Migration-focused cache redesign (HDF5 → Parquet).
+- Dual read paths: eager pandas reads and optional lazy/partial Polars reads.
+- Metadata-driven artifact tracking for cache entries.
+- Remote references preserved as references (not persisted to disk).
+- Safety guard for incomplete/preview-only data.
 ---
 
 ## Context
@@ -25,12 +35,11 @@ This cache is used to store intermediate datasets produced by nodes in a graph-b
 ---
 
 ## My Contribution
-- Designed and implemented the new `CacheManager` to replace a legacy implementation
-- Migrated persistence from HDF5 + custom storage handler to Parquet
-- Added a lazy/partial read path (`load_df_parquet_lazy`) using Polars
-- Implemented metadata-driven save/load for node artifacts
-- Added safety guards (e.g., warnings for incomplete data that should not be cached)
-- Preserved compatibility considerations during the transition
+- Designed and implemented the new `CacheManager` to replace a legacy implementation.
+- Migrated persistence from HDF5 + custom storage handler to Parquet.
+- Added a lazy/partial read path (`load_df_parquet_lazy`) using Polars.
+- Implemented metadata-driven save/load for node artifacts.
+- Added safety guards (warnings for incomplete data that should not be cached).
 
 ---
 
@@ -57,6 +66,7 @@ flowchart LR
     Parquet -->|"lazy / partial read (polars)"| CacheManager
     CacheManager -->|"return data"| Node
 ```
+Diagram source: `diagrams/cache_read_write_flow.mmd`.
 
 The new cache manager is built around:
 - **Parquet files** for cached datasets
@@ -67,6 +77,14 @@ The new cache manager is built around:
 
 It also explicitly handles non-cached references (e.g., remote links) and avoids persisting incomplete, preview-only data.
 
+---
+
+## Evidence in Code (Quick Pointers)
+- Parquet persistence: CacheManager.save_df_to_parquet.
+- Lazy/partial reads: CacheManager.load_df_parquet_lazy with column/row selection.
+- Metadata-driven artifacts: CacheManager.save_data_list stores name/data entries.
+- Remote references: string values are stored as references and returned without loading.
+- Safety guard: warning emitted for polars.DataFrame inputs in save_data_list.
 ---
 
 ## Representative Before → After
@@ -80,11 +98,11 @@ Key highlights:
 
 ---
 
-## Outcomes (Qualitative)
-- Enabled partial access patterns for large cached datasets (useful for previews)
-- Reduced unnecessary memory pressure by avoiding full materialization when not needed
-- Simplified cache persistence logic and improved maintainability
-- Made the cache layer easier to extend with additional controls (e.g., validation, naming rules)
+## Capabilities Demonstrated (from code)
+- Enables partial access patterns for cached datasets via optional lazy reads.
+- Avoids full materialization when callers request lazy reads or metadata-only outputs.
+- Simplifies cache layout to a metadata list per node (no input/output split).
+- Guards against persisting incomplete preview data via warnings.
 
 ---
 
