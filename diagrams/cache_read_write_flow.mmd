@@ -1,0 +1,5 @@
+flowchart LR
+    Node -->|produce data| CacheManager
+    CacheManager -->|save| ParquetFiles
+    ParquetFiles -->|lazy/eager read| CacheManager
+    CacheManager --> Node
