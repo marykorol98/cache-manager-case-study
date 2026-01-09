@@ -2,9 +2,7 @@
 
 ## Executive Summary
 I replaced a legacy node-level cache with a new cache manager designed for **reliable local persistence** and **efficient access to large tabular data**.
-
 The migration moves storage from a custom HDF5-based approach to **Parquet**, and introduces an optional **lazy/partial read path via Polars** for preview-like scenarios.
-
 This cache stores intermediate datasets produced by nodes in a graph-based pipeline and keeps remote references as references rather than persisting them.
 
 ---
@@ -13,7 +11,7 @@ This cache stores intermediate datasets produced by nodes in a graph-based pipel
 - `code/new_cache_manager.py` — new `CacheManager` with Parquet persistence and optional Polars reads.
 - `code/old_cache_manager.py` — legacy cache using HDF5 + storage handlers.
 - `docs/before-after.md` — before/after comparison table.
-- `docs/design-tradeoffs.md` — short trade-off notes.
+- `docs/design-tradeoffs.md` — design trade-offs and mitigations.
 - `diagrams/cache_read_write_flow.mmd` — Mermaid diagram source.
 
 ---
@@ -24,6 +22,7 @@ This cache stores intermediate datasets produced by nodes in a graph-based pipel
 - Metadata-driven artifact tracking for cache entries.
 - Remote references preserved as references (not persisted to disk).
 - Safety guard for incomplete/preview-only data.
+
 ---
 
 ## Context
@@ -80,11 +79,11 @@ It also explicitly handles non-cached references (e.g., remote links) and avoids
 ---
 
 ## Evidence in Code (Quick Pointers)
-- Parquet persistence: CacheManager.save_df_to_parquet.
-- Lazy/partial reads: CacheManager.load_df_parquet_lazy with column/row selection.
-- Metadata-driven artifacts: CacheManager.save_data_list stores name/data entries.
+- Parquet persistence: `CacheManager.save_df_to_parquet`.
+- Lazy/partial reads: `CacheManager.load_df_parquet_lazy` with column/row selection.
+- Metadata-driven artifacts: `CacheManager.save_data_list` stores `name`/`data `entries.
 - Remote references: string values are stored as references and returned without loading.
-- Safety guard: warning emitted for polars.DataFrame inputs in save_data_list.
+- Safety guard: warning emitted for `polars.DataFrame` inputs in `save_data_list`.
 ---
 
 ## Representative Before → After

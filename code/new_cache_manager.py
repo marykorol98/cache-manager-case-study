@@ -5,7 +5,6 @@ from typing import Optional
 import pandas as pd
 import logging
 import shutil
-from smile_ml_core.data.services.tools import create_folder
 import polars as pl
 from polars.dataframe.frame import DataFrame as pl_DataFrame
 from polars.exceptions import ColumnNotFoundError

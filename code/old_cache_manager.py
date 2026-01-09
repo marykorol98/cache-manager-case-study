@@ -9,9 +9,6 @@ from typing import Dict, List
 import h5py
 import pandas as pd
 
-from smile_ml_core.data.services.reader import convert_wkt_if_geo, convert_geo_data
-from smile_ml_core.data.services.tools import create_folder
-
 from graph.config import settings
 import logging
 
